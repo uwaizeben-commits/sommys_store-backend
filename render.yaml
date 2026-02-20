@@ -5,8 +5,8 @@ services:
     repo: https://github.com/uwaizeben-commits/sommys_store-backend
     branch: master
     plan: free
-    buildCommand: "npm install"
-    startCommand: "node src/index.js"
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm start"
     envVars:
       - key: MONGO_URI
         value: "" # Set this on Render dashboard (do NOT commit secrets)

@@ -20,12 +20,12 @@ This e-commerce store has been prepared for deployment on Render.com as two sepa
    - **Region**: (default is fine)
    - **Branch**: `master`
    - **Language/Environment**: Node
-   - **Build Command**: `npm install`
-   - **Start Command**: `node src/index.js`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
 4. **Environment Variables** (click "Add From File" or add manually):
    - Key: `MONGO_URI` | Value: `mongodb+srv://[user]:[pass]@cluster.mongodb.net/dbname?appName=appname` (get from your MongoDB Atlas connection string)
    - Key: `NODE_ENV` | Value: `production`
-   - Key: `PORT` | Value: `5001` (Render auto-assigns a port, but the app reads this)
+   - Key: `PORT` | Value: `5001` (optional; Render assigns port automatically)
 5. Click **Create Web Service** and wait for deployment
 6. Note the **Backend URL** (e.g., `https://sommys-store-backend.onrender.com`)
 
