@@ -11,7 +11,7 @@ exports.register = async (req, res) => {
     const normalizedPhone = phone ? String(phone).replace(/\D/g, '') : undefined
     // Check for existing user by email or phone
     const exists = await User.findOne({ $or: [ { email }, { phone: normalizedPhone } ] })
-    if (exists) return res.status(400).json({ message: 'Email or phone already in use' })
+    if (exists) return res.status(400).json({ message: 'Already a member' })
     const hashed = await bcrypt.hash(password, 10)
     const user = new User({ name, email, phone: normalizedPhone, password: hashed })
     await user.save()
@@ -146,7 +146,7 @@ exports.adminRegister = async (req, res) => {
     if (!email || !password) return res.status(400).json({ message: 'Missing email or password' })
 
     const exists = await User.findOne({ $or: [{ email }, { phone: phone ? String(phone).replace(/\D/g, '') : '' }] })
-    if (exists) return res.status(400).json({ message: 'Email or phone already in use' })
+    if (exists) return res.status(400).json({ message: 'Already a member' })
 
     const hashed = await bcrypt.hash(password, 10)
     const normalizedPhone = phone ? String(phone).replace(/\D/g, '') : undefined
