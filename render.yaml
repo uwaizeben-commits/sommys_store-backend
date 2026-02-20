@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: sommys-store-backend
+    env: node
+    repo: https://github.com/uwaizeben-commits/sommys_store-backend
+    branch: master
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node src/index.js"
+    envVars:
+      - key: MONGO_URI
+        value: "" # Set this on Render dashboard (do NOT commit secrets)
+      - key: NODE_ENV
+        value: "production"
+      - key: PORT
+        value: "5001"
+
+  - type: static_site
+    name: sommys-store-frontend
+    repo: https://github.com/uwaizeben-commits/sommys_store-frontend
+    branch: main
+    plan: free
+    buildCommand: "npm install && npm run build"
+    publishPath: "dist"
