@@ -7,14 +7,16 @@ const nodemailer = require('nodemailer')
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body
-    const exists = await User.findOne({ email })
-    if (exists) return res.status(400).json({ message: 'Email already in use' })
+    const { name, email, password, phone } = req.body
+    const normalizedPhone = phone ? String(phone).replace(/\D/g, '') : undefined
+    // Check for existing user by email or phone
+    const exists = await User.findOne({ $or: [ { email }, { phone: normalizedPhone } ] })
+    if (exists) return res.status(400).json({ message: 'Email or phone already in use' })
     const hashed = await bcrypt.hash(password, 10)
-    const user = new User({ name, email, password: hashed })
+    const user = new User({ name, email, phone: normalizedPhone, password: hashed })
     await user.save()
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' })
-    res.status(201).json({ token, user: { id: user._id, email: user.email, name: user.name } })
+    res.status(201).json({ token, user: { id: user._id, email: user.email, name: user.name, phone: user.phone } })
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -22,13 +24,25 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body
-    const user = await User.findOne({ email })
+    const { email, identifier, password } = req.body
+    let user = null
+    if (email) {
+      user = await User.findOne({ email })
+    } else if (identifier) {
+      // identifier may be email or phone
+      if (identifier.includes('@')) {
+        user = await User.findOne({ email: identifier })
+      } else {
+        const norm = String(identifier).replace(/\D/g, '')
+        user = await User.findOne({ phone: norm })
+      }
+    }
+
     if (!user) return res.status(400).json({ message: 'Invalid credentials' })
     const ok = await bcrypt.compare(password, user.password)
     if (!ok) return res.status(400).json({ message: 'Invalid credentials' })
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' })
-    res.json({ token, user: { id: user._id, email: user.email, name: user.name } })
+    res.json({ token, user: { id: user._id, email: user.email, name: user.name, phone: user.phone } })
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
