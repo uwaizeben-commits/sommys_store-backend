@@ -121,20 +121,20 @@ exports.resetPassword = async (req, res) => {
   }
 }
 
-// Simple in-memory admin store for demo (use DB in production)
-const admins = []
-
+// Admin management persisted in DB via User model
 exports.adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body
     if (!email || !password) return res.status(400).json({ message: 'Missing email or password' })
 
-    // Check in-memory store
-    const admin = admins.find(a => a.email === email && a.password === password)
+    const admin = await User.findOne({ email, isAdmin: true })
     if (!admin) return res.status(401).json({ message: 'Invalid admin credentials' })
 
-    const token = jwt.sign({ email, role: 'admin' }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' })
-    res.json({ token, email, role: 'admin' })
+    const ok = await bcrypt.compare(password, admin.password)
+    if (!ok) return res.status(401).json({ message: 'Invalid admin credentials' })
+
+    const token = jwt.sign({ id: admin._id, role: 'admin' }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' })
+    res.json({ token, email: admin.email, role: 'admin', user: { id: admin._id, name: admin.name, email: admin.email } })
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -142,16 +142,19 @@ exports.adminLogin = async (req, res) => {
 
 exports.adminRegister = async (req, res) => {
   try {
-    const { email, password } = req.body
+    const { name, email, password, phone } = req.body
     if (!email || !password) return res.status(400).json({ message: 'Missing email or password' })
 
-    // Check if admin already exists
-    if (admins.find(a => a.email === email)) return res.status(400).json({ message: 'Admin already exists' })
+    const exists = await User.findOne({ $or: [{ email }, { phone: phone ? String(phone).replace(/\D/g, '') : '' }] })
+    if (exists) return res.status(400).json({ message: 'Email or phone already in use' })
 
-    // Add to in-memory store (use bcrypt in production)
-    admins.push({ email, password })
-    const token = jwt.sign({ email, role: 'admin' }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' })
-    res.json({ token, email, role: 'admin' })
+    const hashed = await bcrypt.hash(password, 10)
+    const normalizedPhone = phone ? String(phone).replace(/\D/g, '') : undefined
+    const user = new User({ name, email, phone: normalizedPhone, password: hashed, isAdmin: true })
+    await user.save()
+
+    const token = jwt.sign({ id: user._id, role: 'admin' }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' })
+    res.json({ token, email: user.email, role: 'admin', user: { id: user._id, name: user.name, email: user.email } })
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
