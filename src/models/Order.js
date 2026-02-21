@@ -21,7 +21,13 @@ const OrderSchema = new mongoose.Schema(
     cancellationFee: { type: Number, default: 0 },
     refundAmount: { type: Number, default: 0 },
     refundStatus: { type: String, enum: ['none', 'pending', 'completed'], default: 'none' },
-    shippingAddress: String,
+    shippingAddress: {
+      fullName: String,
+      email: String,
+      address: String,
+      city: String,
+      postalCode: String
+    },
     paymentMethod: String
   },
   { timestamps: true }
