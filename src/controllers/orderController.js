@@ -1,4 +1,5 @@
 const Order = require('../models/Order')
+const mongoose = require('mongoose')
 
 // Create a new order (called after checkout)
 exports.createOrder = async (req, res) => {
@@ -6,8 +7,11 @@ exports.createOrder = async (req, res) => {
     const { userId, items, total, shippingAddress, paymentMethod } = req.body
     if (!userId || !items || !total) return res.status(400).json({ message: 'Missing required fields' })
 
+    // Convert userId string to MongoDB ObjectId if needed
+    const normalizedUserId = mongoose.Types.ObjectId.isValid(userId) ? userId : new mongoose.Types.ObjectId(userId)
+
     const order = new Order({
-      userId,
+      userId: normalizedUserId,
       items,
       total,
       shippingAddress,
@@ -24,7 +28,9 @@ exports.createOrder = async (req, res) => {
 exports.getUserOrders = async (req, res) => {
   try {
     const { userId } = req.params
-    const orders = await Order.find({ userId }).populate('items.productId').sort({ orderDate: -1 })
+    // Convert userId string to MongoDB ObjectId
+    const normalizedUserId = mongoose.Types.ObjectId.isValid(userId) ? userId : new mongoose.Types.ObjectId(userId)
+    const orders = await Order.find({ userId: normalizedUserId }).populate('items.productId').sort({ orderDate: -1 })
     res.json({ orders })
   } catch (err) {
     res.status(500).json({ message: err.message })
@@ -35,6 +41,10 @@ exports.getUserOrders = async (req, res) => {
 exports.getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params
+    // Handle string orderId conversion to ObjectId
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: 'Invalid order ID format' })
+    }
     const order = await Order.findById(orderId).populate('items.productId')
     if (!order) return res.status(404).json({ message: 'Order not found' })
     res.json({ order })
@@ -47,6 +57,9 @@ exports.getOrderById = async (req, res) => {
 exports.cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: 'Invalid order ID format' })
+    }
     const order = await Order.findById(orderId)
     if (!order) return res.status(404).json({ message: 'Order not found' })
     if (['delivered', 'cancelled'].includes(order.status)) {
@@ -74,6 +87,10 @@ exports.updateOrderStatus = async (req, res) => {
     const { orderId } = req.params
     const { status, dispatchDate, departureDate, deliveryDate } = req.body
     
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: 'Invalid order ID format' })
+    }
+
     const order = await Order.findById(orderId)
     if (!order) return res.status(404).json({ message: 'Order not found' })
 
@@ -93,6 +110,9 @@ exports.updateOrderStatus = async (req, res) => {
 exports.trackOrder = async (req, res) => {
   try {
     const { orderId } = req.params
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: 'Invalid order ID format' })
+    }
     const order = await Order.findById(orderId)
     if (!order) return res.status(404).json({ message: 'Order not found' })
 
