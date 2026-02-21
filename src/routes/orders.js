@@ -2,6 +2,9 @@ const express = require('express')
 const router = express.Router()
 const orderController = require('../controllers/orderController')
 
+// Get all orders (admin endpoint)
+router.get('/admin/all', orderController.getAllOrders)
+
 // Create order
 router.post('/', orderController.createOrder)
 
