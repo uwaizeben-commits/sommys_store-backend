@@ -10,7 +10,9 @@ const ordersRouter = require('./routes/orders')
 
 const app = express()
 app.use(cors())
-app.use(express.json())
+// Increase body size limits to allow base64 image uploads from admin UI
+app.use(express.json({ limit: '8mb' }))
+app.use(express.urlencoded({ limit: '8mb', extended: true }))
 
 app.use('/api/auth', authRouter)
 app.use('/api/cart', cartRouter)
